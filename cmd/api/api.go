@@ -4,6 +4,10 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/fares7elsadek/Social-Golang/internal/handler"
+	"github.com/fares7elsadek/Social-Golang/internal/repository/postgres"
+	service "github.com/fares7elsadek/Social-Golang/internal/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 )
@@ -19,17 +23,46 @@ type config struct {
 func(app *application) mount() http.Handler {
 	
 	r := chi.NewRouter()
-	// base middlewares
 	r.Use(middleware.RequestID)
 	r.Use(middleware.ClientIPFromRemoteAddr) 
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
 
 	r.Use(middleware.Timeout(60 * time.Second))
-	
+	r.Get("/health", app.healthCheckHandler)
+
+	userRepopsitory := postgres.NewUserRepository()
+	postRepository := postgres.NewPostRepository()
+	commentRepository := postgres.NewCommentRepository()
+
+	userService := service.NewUserService(userRepopsitory)
+	postService := service.NewPostService(postRepository)
+	commentService := service.NewCommentService(commentRepository)
+
+	userHandler := handler.NewUserHandler(userService)
+	postHandler := handler.NewPostHandler(postService)
+	commentHandler := handler.NewCommentHandler(commentService)
 
 	r.Route("/v1",func (r chi.Router){
-		r.Get("/health", app.healthCheckHandler)
+		// Users
+		r.Post("/users", userHandler.CreateUser)
+		r.Get("/users/{id}", userHandler.GetUserByID)
+		r.Get("/users/email",userHandler.GetUserByEmail)
+		r.Put("/users/{id}", userHandler.UpdateUser)
+		r.Delete("/users/{id}", userHandler.DeleteUser)
+
+		// Posts
+		r.Post("/posts", postHandler.CreatePost)
+		r.Get("/posts/{id}", postHandler.GetPostByID)
+		r.Put("/posts/{id}", postHandler.UpdatePost)
+		r.Delete("/posts/{id}", postHandler.DeletePost)
+
+
+		// Comments
+		r.Post("/comments", commentHandler.CreateComment)
+		r.Get("/comments/{id}", commentHandler.GetCommentByID)
+		r.Put("/comments/{id}", commentHandler.UpdateComment)
+		r.Delete("/comments/{id}", commentHandler.DeleteComment)
 	})
 
 	return r
