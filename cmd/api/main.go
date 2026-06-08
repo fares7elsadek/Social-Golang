@@ -14,7 +14,7 @@ func main() {
 		log.Fatal("Error loading enviroment varibles")
 	}
 
-	err := postgres.Connect(env.GetString("DB_URL", "postgres://postgres:password@localhost:5432/social_golang"))
+	db,err := postgres.Connect(env.GetString("DB_URL", "postgres://postgres:password@localhost:5432/social_golang"))
 	if err != nil {
 		log.Fatal("Error connecting to database")
 	}else{
@@ -31,6 +31,6 @@ func main() {
 		config: cfg,
 	}
 
-	mux := app.mount()
+	mux := app.mount(db)
 	log.Fatal(app.run(mux))
 }

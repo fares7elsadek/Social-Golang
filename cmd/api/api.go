@@ -10,6 +10,7 @@ import (
 	service "github.com/fares7elsadek/Social-Golang/internal/services"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type application struct {
@@ -20,7 +21,7 @@ type config struct {
 	addr string
 }
 
-func(app *application) mount() http.Handler {
+func(app *application) mount(db *pgxpool.Pool) http.Handler {
 	
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
@@ -31,9 +32,9 @@ func(app *application) mount() http.Handler {
 	r.Use(middleware.Timeout(60 * time.Second))
 	r.Get("/health", app.healthCheckHandler)
 
-	userRepopsitory := postgres.NewUserRepository()
-	postRepository := postgres.NewPostRepository()
-	commentRepository := postgres.NewCommentRepository()
+	userRepopsitory := postgres.NewUserRepository(db)
+	postRepository := postgres.NewPostRepository(db)
+	commentRepository := postgres.NewCommentRepository(db)
 
 	userService := service.NewUserService(userRepopsitory)
 	postService := service.NewPostService(postRepository)

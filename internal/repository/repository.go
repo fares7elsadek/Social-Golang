@@ -1,25 +1,29 @@
 package repository
 
-import "github.com/fares7elsadek/Social-Golang/internal/domain"
+import (
+	"context"
+
+	"github.com/fares7elsadek/Social-Golang/internal/domain"
+)
 
 type UserRepository interface {
-	CreateUser(user *domain.User) error
-	GetUserByID(id int) (*domain.User, error)
-	GetUserByEmail(email string) (*domain.User, error)
-	UpdateUser(user *domain.User) error
-	DeleteUser(id int) error
+	CreateUser(ctx context.Context, user *domain.User) error
+	GetUserByID(ctx context.Context, id int) (*domain.User, error)
+	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
+	UpdateUser(ctx context.Context, user *domain.User) error
+	DeleteUser(ctx context.Context, id int) error
 }
 
 type PostRepository interface {
-	CreatePost(post *domain.Post) error
-	GetPostByID(id int) (*domain.Post, error)
-	UpdatePost(post *domain.Post) error
-	DeletePost(id int) error
+	CreatePost(ctx context.Context, post *domain.Post) error
+	GetPostByID(ctx context.Context, id int) (*domain.Post, error)
+	UpdatePost(ctx context.Context, post *domain.Post) error
+	DeletePost(ctx context.Context, id int) error
 }
 
 type CommentRepository interface {
-	CreateComment(comment *domain.Comment) error
-	GetCommentByID(id int) (*domain.Comment, error)
-	UpdateComment(comment *domain.Comment) error
-	DeleteComment(id int) error
+	CreateComment(ctx context.Context, comment *domain.Comment) error
+	GetCommentByID(ctx context.Context, id int) (*domain.Comment, error)
+	UpdateComment(ctx context.Context, comment *domain.Comment) error
+	DeleteComment(ctx context.Context, id int) error
 }
