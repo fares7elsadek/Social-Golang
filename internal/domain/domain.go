@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"errors"
+	"time"
+)
 
 type User struct {
 	ID        int      "json:\"id\""
@@ -28,3 +31,5 @@ type Comment struct {
 	CreatedAt time.Time "json:\"created_at\""
 	UpdatedAt time.Time "json:\"updated_at\""
 }
+
+var ErrNotFound = errors.New("not found")

@@ -17,6 +17,7 @@ type UserRepository interface {
 type PostRepository interface {
 	CreatePost(ctx context.Context, post *domain.Post) error
 	GetPostByID(ctx context.Context, id int) (*domain.Post, error)
+	GetPostsByAuthor(ctx context.Context, authorId, limit, offset int) ([]*domain.Post, error)
 	UpdatePost(ctx context.Context, post *domain.Post) error
 	DeletePost(ctx context.Context, id int) error
 }
