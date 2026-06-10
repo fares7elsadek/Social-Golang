@@ -25,6 +25,7 @@ type PostRepository interface {
 type CommentRepository interface {
 	CreateComment(ctx context.Context, comment *domain.Comment) error
 	GetCommentByID(ctx context.Context, id int) (*domain.Comment, error)
+	GetCommentsByAuthor(ctx context.Context, postId, limit, offset int) ([]*domain.Comment, error)
 	UpdateComment(ctx context.Context, comment *domain.Comment) error
 	DeleteComment(ctx context.Context, id int) error
 }
