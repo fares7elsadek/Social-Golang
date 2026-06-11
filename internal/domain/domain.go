@@ -1,7 +1,6 @@
 package domain
 
 import (
-	"errors"
 	"time"
 )
 
@@ -32,4 +31,3 @@ type Comment struct {
 	UpdatedAt time.Time "json:\"updated_at\""
 }
 
-var ErrNotFound = errors.New("not found")

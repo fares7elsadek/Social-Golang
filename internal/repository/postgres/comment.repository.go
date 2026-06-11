@@ -60,7 +60,7 @@ func (r *commentRepository) GetCommentByID(ctx context.Context, id int) (*domain
     return nil, nil
 }
 
-func (r *commentRepository) GetCommentsByAuthor(ctx context.Context, postId, limit, offset int) ([]*domain.Comment, error){
+func (r *commentRepository) GetCommentsByPostId(ctx context.Context, postId, limit, offset int) ([]*domain.Comment, error){
     query := `
             SELECT id, content, author_id, post_id, created_at, updated_at 
             FROM comments WHERE post_id = $1

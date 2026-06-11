@@ -37,14 +37,14 @@ func(app *application) mount(db *pgxpool.Pool) http.Handler {
 	commentRepository := postgres.NewCommentRepository(db)
 
 	userService := service.NewUserService(userRepopsitory)
-	postService := service.NewPostService(postRepository)
-	commentService := service.NewCommentService(commentRepository)
+	postService := service.NewPostService(postRepository,userRepopsitory)
+	commentService := service.NewCommentService(commentRepository,userRepopsitory)
 
 	userHandler := handler.NewUserHandler(userService)
 	postHandler := handler.NewPostHandler(postService)
 	commentHandler := handler.NewCommentHandler(commentService)
 
-	r.Route("/v1",func (r chi.Router){
+	r.Route("/api/v1",func (r chi.Router){
 		// Users
 		r.Post("/users", userHandler.CreateUser)
 		r.Get("/users/{id}", userHandler.GetUserByID)
@@ -54,16 +54,18 @@ func(app *application) mount(db *pgxpool.Pool) http.Handler {
 
 		// Posts
 		r.Post("/posts", postHandler.CreatePost)
-		r.Get("/posts/{id}", postHandler.GetPostByID)
-		r.Put("/posts/{id}", postHandler.UpdatePost)
-		r.Delete("/posts/{id}", postHandler.DeletePost)
+		r.Get("/posts/{postId}", postHandler.GetPostByID)
+		r.Get("/posts/{authorId}/author", postHandler.GetPostsByAuthorId)
+		r.Put("/posts/{postId}", postHandler.UpdatePost)
+		r.Delete("/posts/{postId}", postHandler.DeletePost)
 
 
 		// Comments
-		r.Post("/comments", commentHandler.CreateComment)
-		r.Get("/comments/{id}", commentHandler.GetCommentByID)
-		r.Put("/comments/{id}", commentHandler.UpdateComment)
-		r.Delete("/comments/{id}", commentHandler.DeleteComment)
+		r.Post("/comments/{postId}/{authorId}", commentHandler.CreateComment)
+		r.Get("/comments/{commentId}", commentHandler.GetCommentByID)
+		r.Get("/comments/{postId}/post", commentHandler.GetCommentsByPostId)
+		r.Put("/comments/{commentId}", commentHandler.UpdateComment)
+		r.Delete("/comments/{commentId}", commentHandler.DeleteComment)
 	})
 
 	return r

@@ -10,6 +10,7 @@ type UserRepository interface {
 	CreateUser(ctx context.Context, user *domain.User) error
 	GetUserByID(ctx context.Context, id int) (*domain.User, error)
 	GetUserByEmail(ctx context.Context, email string) (*domain.User, error)
+	GetUserByUsername(ctx context.Context, username string) (*domain.User, error)
 	UpdateUser(ctx context.Context, user *domain.User) error
 	DeleteUser(ctx context.Context, id int) error
 }
@@ -25,7 +26,7 @@ type PostRepository interface {
 type CommentRepository interface {
 	CreateComment(ctx context.Context, comment *domain.Comment) error
 	GetCommentByID(ctx context.Context, id int) (*domain.Comment, error)
-	GetCommentsByAuthor(ctx context.Context, postId, limit, offset int) ([]*domain.Comment, error)
+	GetCommentsByPostId(ctx context.Context, postId, limit, offset int) ([]*domain.Comment, error)
 	UpdateComment(ctx context.Context, comment *domain.Comment) error
 	DeleteComment(ctx context.Context, id int) error
 }
