@@ -40,6 +40,19 @@ CREATE TABLE comments (
         ON DELETE CASCADE
 );
 
+
+CREATE TABLE refresh_token(
+    id SERIAL PRIMARY KEY,
+    tokenId TEXT NOT NULL,
+    userId INT NOT NULL,
+    ttl TIMESTAMP NOT NULL
+
+    CONSTRAINT fk_refreshtoken_user
+        FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
 CREATE INDEX idx_posts_author_id
     ON posts(author_id);
 
@@ -48,3 +61,9 @@ CREATE INDEX idx_comments_author_id
 
 CREATE INDEX idx_comments_post_id
     ON comments(post_id);
+
+CREATE INDEX idx_refreshtoken_userid
+    ON refresh_token(userId);
+
+CREATE INDEX idx_refreshtoken_tokenid
+    ON refresh_token(tokenId);

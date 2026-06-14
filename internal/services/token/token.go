@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-
 	"github.com/fares7elsadek/Social-Golang/internal/domain"
+	"github.com/fares7elsadek/Social-Golang/internal/repository"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -20,12 +20,6 @@ var (
 )
 
 
-type RefreshStore interface {
-	Save(ctx context.Context, userID, tokenID string, ttl time.Duration) error
-	Exists(ctx context.Context, userID, tokenID string) (bool, error)
-	Delete(ctx context.Context, userID, tokenID string) error
-	DeleteAll(ctx context.Context, userID string) error
-}
 
 type jwtClaims struct {
 	UserID string       `json:"sub"`
@@ -53,10 +47,10 @@ func DefaultConfig(accessSecret, refreshSecret []byte) Config {
 
 type Service struct {
 	cfg   Config
-	store RefreshStore
+	store repository.RefresTokenRepository
 }
 
-func New(cfg Config, store RefreshStore) *Service {
+func New(cfg Config, store repository.RefresTokenRepository) *Service {
 	return &Service{cfg: cfg, store: store}
 }
 
@@ -72,7 +66,7 @@ func (s *Service) Issue(ctx context.Context, user *domain.User) (*domain.TokenPa
 		return nil, fmt.Errorf("make refresh token: %w", err)
 	}
 	
-	if err := s.store.Save(ctx, strconv.Itoa(user.ID), tokenID, s.cfg.RefreshTokenTTL); err != nil {
+	if err := s.store.Save(ctx, user.ID, tokenID, s.cfg.RefreshTokenTTL); err != nil {
 		return nil, fmt.Errorf("persist refresh token: %w", err)
 	}
 
@@ -123,18 +117,18 @@ func (s *Service) Refresh(ctx context.Context, refreshTokenStr string, user *dom
 		return nil, ErrTokenInvalid
 	}
 
-	ok, err := s.store.Exists(ctx, strconv.Itoa(user.ID), claims.JTI)
+	ok, err := s.store.Exists(ctx, user.ID, claims.JTI)
 
 	if err != nil {
 		return nil, fmt.Errorf("check refresh store: %w", err)
 	}
 
 	if !ok {
-		_ = s.store.DeleteAll(ctx, strconv.Itoa(user.ID))
+		_ = s.store.DeleteAll(ctx, user.ID)
 		return nil, ErrTokenRevoked
 	}
 
-	if err := s.store.Delete(ctx, strconv.Itoa(user.ID), claims.JTI); err != nil {
+	if err := s.store.Delete(ctx, user.ID, claims.JTI); err != nil {
 		return nil, fmt.Errorf("rotate refresh token: %w", err)
 	}
 
@@ -159,7 +153,7 @@ func (s *Service) makeAccessToken(user *domain.User) (string , error){
 	return jwt.NewWithClaims(jwt.SigningMethodES256,claims).SignedString(s.cfg.AccessSecret)
 }
 
-func (s *Service) RevokeAll(ctx context.Context, userID string) error {
+func (s *Service) RevokeAll(ctx context.Context, userID int) error {
 	return s.store.DeleteAll(ctx, userID)
 }
 

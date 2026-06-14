@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"time"
 
 	"github.com/fares7elsadek/Social-Golang/internal/domain"
 )
@@ -29,4 +30,11 @@ type CommentRepository interface {
 	GetCommentsByPostId(ctx context.Context, postId, limit, offset int) ([]*domain.Comment, error)
 	UpdateComment(ctx context.Context, comment *domain.Comment) error
 	DeleteComment(ctx context.Context, id int) error
+}
+
+type RefresTokenRepository interface {
+	Save(ctx context.Context, userID int, tokenID string, ttl time.Duration) error
+	Exists(ctx context.Context, userID int, tokenID string) (bool, error)
+	Delete(ctx context.Context, userID int, tokenID string) error
+	DeleteAll(ctx context.Context, userID int) error
 }
