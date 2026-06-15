@@ -1,45 +1,67 @@
+-- ==========================================
+-- Users
+-- ==========================================
+
 CREATE TABLE users (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) ,
-    is_active BOOLEAN NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE user_roles(
-    userId INT NOT NULL,
-    roleId INT NOT NULL,
+-- ==========================================
+-- Roles
+-- ==========================================
+
+CREATE TABLE roles (
+    id SERIAL PRIMARY KEY,
+    role TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO roles(role)
+VALUES
+    ('admin'),
+    ('manager'),
+    ('user'),
+    ('readonly');
+
+-- ==========================================
+-- User Roles (Many-to-Many)
+-- ==========================================
+
+CREATE TABLE user_roles (
+    user_id BIGINT NOT NULL,
+    role_id INT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
-    PRIMARY KEY (userId,roleId)
+    PRIMARY KEY (user_id, role_id),
 
-    CONSTRAINT fk_users_userId
-        FOREIGN KEY (userId)
+    CONSTRAINT fk_user_roles_user
+        FOREIGN KEY (user_id)
         REFERENCES users(id)
-        ON DELETE CASCADE
-    
-    CONSTRAINT fk_roles_roleId
-        FOREIGN KEY (roleId)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_user_roles_role
+        FOREIGN KEY (role_id)
         REFERENCES roles(id)
         ON DELETE CASCADE
-)
+);
 
-CREATE TABLE roles(
-    id SERIAL PRIMARY KEY,
-    role TEXT NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-)
-
+-- ==========================================
+-- Posts
+-- ==========================================
 
 CREATE TABLE posts (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     content TEXT NOT NULL,
-    author_id INT NOT NULL,
+    author_id BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
@@ -49,11 +71,15 @@ CREATE TABLE posts (
         ON DELETE CASCADE
 );
 
+-- ==========================================
+-- Comments
+-- ==========================================
+
 CREATE TABLE comments (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     content TEXT NOT NULL,
-    author_id INT NOT NULL,
-    post_id INT NOT NULL,
+    author_id BIGINT NOT NULL,
+    post_id BIGINT NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
@@ -68,18 +94,25 @@ CREATE TABLE comments (
         ON DELETE CASCADE
 );
 
+-- ==========================================
+-- Refresh Tokens
+-- ==========================================
 
-CREATE TABLE refresh_token(
-    id SERIAL PRIMARY KEY,
-    tokenId TEXT NOT NULL,
-    userId INT NOT NULL,
-    ttl TIMESTAMP NOT NULL
+CREATE TABLE refresh_tokens (
+    token_id UUID PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
 
-    CONSTRAINT fk_refreshtoken_user
-        FOREIGN KEY (userId)
+    CONSTRAINT fk_refresh_tokens_user
+        FOREIGN KEY (user_id)
         REFERENCES users(id)
         ON DELETE CASCADE
 );
+
+-- ==========================================
+-- Indexes
+-- ==========================================
 
 CREATE INDEX idx_posts_author_id
     ON posts(author_id);
@@ -90,19 +123,8 @@ CREATE INDEX idx_comments_author_id
 CREATE INDEX idx_comments_post_id
     ON comments(post_id);
 
-CREATE INDEX idx_refreshtoken_userid
-    ON refresh_token(userId);
+CREATE INDEX idx_refresh_tokens_user_id
+    ON refresh_tokens(user_id);
 
-CREATE INDEX idx_refreshtoken_tokenid
-    ON refresh_token(tokenId);
-
-
-INSERT INTO roles(role)
-Values("admin")
-INSERT INTO roles(role)
-Values("manager")
-INSERT INTO roles(role)
-Values("user")
-INSERT INTO roles(role)
-Values("readonly")
-
+CREATE INDEX idx_roles_role
+    ON roles(role);
