@@ -18,19 +18,52 @@ func NewUserRepository(db *pgxpool.Pool) *userRepository {
 }
 
 func (r *userRepository) CreateUser(ctx context.Context, user *domain.User) error {
-	query := `
-        INSERT INTO users(username, email)
-        VALUES($1, $2)
-        RETURNING id
-    `
+	tx, err := r.db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback(ctx)
 
-	err := r.db.QueryRow(ctx, query,
+	userQuery := `
+		INSERT INTO users(username, email, password,is_active)
+		VALUES($1, $2, $3, $4)
+		RETURNING id
+	`
+
+	err = tx.QueryRow(ctx, userQuery,
 		user.Username,
 		user.Email,
+		user.Password,
+		user.IsActive,
 	).Scan(&user.ID)
 
 	if err != nil {
-		return fmt.Errorf("userRepository.CreateUser: %w", err)
+		return fmt.Errorf("create user: %w", err)
+	}
+
+	roleQuery := `
+		INSERT INTO user_roles(user_id, role_id)
+		VALUES($1, $2)
+	`
+
+	for _, role := range user.Roles {
+		roleID, ok := domain.RoleMapping[string(role)]
+		if !ok {
+			return fmt.Errorf("invalid role: %s", role)
+		}
+
+		_, err := tx.Exec(ctx, roleQuery,
+			user.ID,
+			roleID,
+		)
+
+		if err != nil {
+			return fmt.Errorf("insert role: %w", err)
+		}
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return err
 	}
 
 	return nil
@@ -121,13 +154,15 @@ func (r *userRepository) UpdateUser(ctx context.Context, user *domain.User) erro
 	query := `
         UPDATE users
         SET username = $1,
-            email = $2
-        WHERE id = $3
+            email = $2,
+			password = $3
+        WHERE id = $4
     `
 
 	result, err := r.db.Exec(ctx, query,
 		user.Username,
 		user.Email,
+		user.Password,
 		user.ID,
 	)
 

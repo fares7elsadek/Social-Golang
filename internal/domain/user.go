@@ -7,11 +7,18 @@ type Role string
 
 
 const (
-	RoleAdmin     Role = "admin"
-	RoleManager   Role = "manager"
-	RoleUser      Role = "user"
-	RoleReadOnly  Role = "readonly"
+	RoleAdmin    Role = "admin"
+	RoleManager  Role = "manager"
+	RoleUser     Role = "user"
+	RoleReadOnly Role = "readonly"
 )
+
+var RoleMapping = map[string]int{
+	string(RoleAdmin):    1,
+	string(RoleManager):  2,
+	string(RoleUser):     3,
+	string(RoleReadOnly): 4,
+}
 
 
 type User struct {

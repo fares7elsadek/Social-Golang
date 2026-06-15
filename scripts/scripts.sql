@@ -3,9 +3,37 @@ CREATE TABLE users (
     username VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(255) NOT NULL UNIQUE,
     password VARCHAR(255) ,
+    is_active BOOLEAN NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE user_roles(
+    userId INT NOT NULL,
+    roleId INT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+
+    PRIMARY KEY (userId,roleId)
+
+    CONSTRAINT fk_users_userId
+        FOREIGN KEY (userId)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+    
+    CONSTRAINT fk_roles_roleId
+        FOREIGN KEY (roleId)
+        REFERENCES roles(id)
+        ON DELETE CASCADE
+)
+
+CREATE TABLE roles(
+    id SERIAL PRIMARY KEY,
+    role TEXT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+)
+
 
 CREATE TABLE posts (
     id SERIAL PRIMARY KEY,
@@ -67,3 +95,14 @@ CREATE INDEX idx_refreshtoken_userid
 
 CREATE INDEX idx_refreshtoken_tokenid
     ON refresh_token(tokenId);
+
+
+INSERT INTO roles(role)
+Values("admin")
+INSERT INTO roles(role)
+Values("manager")
+INSERT INTO roles(role)
+Values("user")
+INSERT INTO roles(role)
+Values("readonly")
+

@@ -11,42 +11,13 @@ import (
 )
 
 type userHandler struct {
-	userService service.UserService
+    userService service.UserService
 }
 
 func NewUserHandler(userService service.UserService) *userHandler {
-	return &userHandler{userService: userService}
+    return &userHandler{userService: userService}
 }
 
-func (h *userHandler) CreateUser(w http.ResponseWriter,r *http.Request) {
-
-	var req struct {
-        Username string `json:"username"`
-        Email    string `json:"email"`
-        Password string `json:"password"`
-    }
-
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        writeError(w, http.StatusBadRequest, "invalid request body")
-        return
-    }
-
-	if req.Username == "" || req.Email == "" || req.Password == "" {
-        writeError(w, http.StatusBadRequest, "username, email and password are required")
-        return
-    }
-
-	if err := h.userService.CreateUser(r.Context(), req.Username, req.Email, req.Password); err != nil {
-        if errors.Is(err, domain.ErrConflict) {
-            writeError(w, http.StatusConflict, err.Error())
-            return
-        }
-        writeError(w, http.StatusInternalServerError, "unexpected error")
-        return
-    }
-
-	writeJSON(w, http.StatusCreated, map[string]string{"message": "user created"})
-}
 
 func (h *userHandler) GetUserByID(w http.ResponseWriter,r *http.Request) {
 	idStr := r.PathValue("id")

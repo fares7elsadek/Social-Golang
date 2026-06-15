@@ -6,8 +6,11 @@ import (
 	"time"
 
 	"github.com/fares7elsadek/Social-Golang/internal/handler"
+	authmiddleware "github.com/fares7elsadek/Social-Golang/internal/middlewares"
 	"github.com/fares7elsadek/Social-Golang/internal/repository/postgres"
 	service "github.com/fares7elsadek/Social-Golang/internal/services"
+	"github.com/fares7elsadek/Social-Golang/internal/services/auth"
+	"github.com/fares7elsadek/Social-Golang/internal/services/token"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -32,40 +35,63 @@ func(app *application) mount(db *pgxpool.Pool) http.Handler {
 	r.Use(middleware.Timeout(60 * time.Second))
 	r.Get("/health", app.healthCheckHandler)
 
+	config := token.DefaultConfig([]byte("testsecret"),[]byte("testsecret"))
+
 	userRepopsitory := postgres.NewUserRepository(db)
 	postRepository := postgres.NewPostRepository(db)
 	commentRepository := postgres.NewCommentRepository(db)
+	refreshTokenRepo := postgres.NewRefreshTokenRepo(db)
 
 	userService := service.NewUserService(userRepopsitory)
 	postService := service.NewPostService(postRepository,userRepopsitory)
 	commentService := service.NewCommentService(commentRepository,userRepopsitory)
+	tokenService := token.New(config,refreshTokenRepo)
+	authService := auth.NewAuthService(userRepopsitory,tokenService)
 
 	userHandler := handler.NewUserHandler(userService)
 	postHandler := handler.NewPostHandler(postService)
 	commentHandler := handler.NewCommentHandler(commentService)
+	authHandler := handler.NewAuthHandler(authService)
 
 	r.Route("/api/v1",func (r chi.Router){
+		// auth
+		r.Post("/auth/register",authHandler.Register)
+		r.Post("/auth/login",authHandler.Login)
+		r.Post("/auth/refresh",authHandler.Refresh)
+		r.Post("/auth/logout",authHandler.Logout)
+		r.With(authmiddleware.Authenticate(tokenService)).Get("/me",authHandler.Me)
+
 		// Users
-		r.Post("/users", userHandler.CreateUser)
 		r.Get("/users/{id}", userHandler.GetUserByID)
 		r.Get("/users/email",userHandler.GetUserByEmail)
-		r.Put("/users/{id}", userHandler.UpdateUser)
-		r.Delete("/users/{id}", userHandler.DeleteUser)
+		
+		r.With(authmiddleware.Authenticate(tokenService),
+		authmiddleware.RequireSelf(func(r *http.Request) string {
+		return chi.URLParam(r, "id")
+		})).Put("/users/{id}", userHandler.UpdateUser)
+		
+		r.With(authmiddleware.Authenticate(tokenService),
+		authmiddleware.RequireSelf(func(r *http.Request) string {
+		return chi.URLParam(r, "id")
+		})).Delete("/users/{id}", userHandler.DeleteUser)
+
 
 		// Posts
-		r.Post("/posts", postHandler.CreatePost)
-		r.Get("/posts/{postId}", postHandler.GetPostByID)
-		r.Get("/posts/{authorId}/author", postHandler.GetPostsByAuthorId)
-		r.Put("/posts/{postId}", postHandler.UpdatePost)
-		r.Delete("/posts/{postId}", postHandler.DeletePost)
+		r.With(authmiddleware.Authenticate(tokenService)).Post("/posts", postHandler.CreatePost)
+		r.With(authmiddleware.Authenticate(tokenService)).Get("/posts/{postId}", postHandler.GetPostByID)
+		r.With(authmiddleware.Authenticate(tokenService)).Get("/posts/{authorId}/author", postHandler.GetPostsByAuthorId)
+
+		
+		r.With(authmiddleware.Authenticate(tokenService)).Put("/posts/{postId}", postHandler.UpdatePost)
+		r.With(authmiddleware.Authenticate(tokenService)).Delete("/posts/{postId}", postHandler.DeletePost)
 
 
 		// Comments
-		r.Post("/comments/{postId}/{authorId}", commentHandler.CreateComment)
-		r.Get("/comments/{commentId}", commentHandler.GetCommentByID)
-		r.Get("/comments/{postId}/post", commentHandler.GetCommentsByPostId)
-		r.Put("/comments/{commentId}", commentHandler.UpdateComment)
-		r.Delete("/comments/{commentId}", commentHandler.DeleteComment)
+		r.With(authmiddleware.Authenticate(tokenService)).Post("/comments/{postId}/{authorId}", commentHandler.CreateComment)
+		r.With(authmiddleware.Authenticate(tokenService)).Get("/comments/{commentId}", commentHandler.GetCommentByID)
+		r.With(authmiddleware.Authenticate(tokenService)).Get("/comments/{postId}/post", commentHandler.GetCommentsByPostId)
+		r.With(authmiddleware.Authenticate(tokenService)).Put("/comments/{commentId}", commentHandler.UpdateComment)
+		r.With(authmiddleware.Authenticate(tokenService)).Delete("/comments/{commentId}", commentHandler.DeleteComment)
 	})
 
 	return r
